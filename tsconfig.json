@@ -6,7 +6,8 @@
     "rootDir": "src",
     "outDir": "build",
     "types": ["node"],
-    "noEmitOnError": true
+    "noEmitOnError": true,
+    "rewriteRelativeImportExtensions": true
   },
   "include": ["src/**/*.ts"]
 }

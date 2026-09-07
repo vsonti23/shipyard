@@ -85,6 +85,20 @@ jobs:
       id-token: write
 
     steps:
+      - name: Show OIDC claims
+        env:
+          AUDIENCE: sts.amazonaws.com
+        run: |
+          TOKEN_JSON=$(curl --silent \
+            --header "Authorization: bearer $ACTIONS_ID_TOKEN_REQUEST_TOKEN" \
+            "$ACTIONS_ID_TOKEN_REQUEST_URL&audience=$AUDIENCE")
+
+          ID_TOKEN=$(echo "$TOKEN_JSON" | jq --raw-output ".value")
+
+          echo "$ID_TOKEN" |
+            awk -F. '{print $2}' |
+            base64 --decode 2>/dev/null |
+            jq '{iss, aud, sub, repository, ref, event_name}'
       - name: Configure AWS credentials
         uses: aws-actions/configure-aws-credentials@v6
         with:

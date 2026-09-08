@@ -1,0 +1,7 @@
+services:
+  shipyard:
+    image: ghcr.io/vsonti23/shipyard:${SHIPYARD_IMAGE_TAG?SHIPYARD_IMAGE_TAG IS REQUIRED}
+    container_name: shipyard
+    restart: unless-stopped
+    ports:
+      - "80:3000"

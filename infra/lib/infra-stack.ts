@@ -93,7 +93,7 @@ export class InfraStack extends cdk.Stack {
         "--name shipyard",
         "--restart unless-stopped",
         "--publish 80:3000",
-        "ghcr.io/vsonti/shipyard:latest",
+        "ghcr.io/vsonti23/shipyard:latest",
       ].join(" "),
     )
   }

@@ -114,8 +114,8 @@ jobs:
       - name: Deploy Shipyard stack
         run: npx cdk deploy ShipyardStack --require-approval never
 
-  test-ssm-connection:
-    name: Test SSM Connection
+  deploy-app:
+    name: Deploy Application
     needs: deploy-infra
     if: github.event_name == 'push' && github.ref == 'refs/heads/main'
     runs-on: ubuntu-latest
@@ -125,57 +125,49 @@ jobs:
       id-token: write
 
     steps:
+      - name: Check out repository
+        uses: actions/checkout@v6
+
       - name: Configure AWS credentials
         uses: aws-actions/configure-aws-credentials@v6
         with:
           role-to-assume: ${{ vars.AWS_DEPLOYMENT_ROLE_ARN }}
           aws-region: ${{ vars.AWS_REGION }}
 
-      - name: Send test command
-        id: send-command
+      - name: Encode deployment files
+        id: deployment-files
         run: |
+          echo "compose=$(base64 --wrap=0 deploy/compose.yaml)" >> "$GITHUB_OUTPUT"
+          echo "script=$(base64 --wrap=0 deploy/deploy.sh)" >> "$GITHUB_OUTPUT"
+
+      - name: Send deployment command
+        id: send-command
+        env:
+          COMPOSE_BASE64: ${{ steps.deployment-files.outputs.compose }}
+          SCRIPT_BASE64: ${{ steps.deployment-files.outputs.script }}
+          IMAGE_TAG: ${{ github.sha }}
+        run: |
+          PARAMETERS=$(jq --null-input \
+            --arg compose "$COMPOSE_BASE64" \
+            --arg script "$SCRIPT_BASE64" \
+            --arg imageTag "$IMAGE_TAG" \
+            '{
+              commands: [
+                "set -eu",
+                "mkdir -p /opt/shipyard",
+                ("printf %s " + ($compose | @sh) + " | base64 --decode > /opt/shipyard/compose.yaml"),
+                ("printf %s " + ($script | @sh) + " | base64 --decode > /opt/shipyard/deploy.sh"),
+                "chmod +x /opt/shipyard/deploy.sh",
+                ("bash /opt/shipyard/deploy.sh " + ($imageTag | @sh))
+              ]
+            }')
+
           COMMAND_ID=$(aws ssm send-command \
             --document-name "AWS-RunShellScript" \
             --targets "Key=tag:Project,Values=Shipyard" \
-            --parameters 'commands=["docker compose version"]' \
-            --comment "Verify Docker Compose from Github Actions" \
+            --parameters "$PARAMETERS" \
+            --comment "Deploy Shipyard $IMAGE_TAG" \
             --query "Command.CommandId" \
             --output text)
 
           echo "command_id=$COMMAND_ID" >> "$GITHUB_OUTPUT"
-
-      - name: Wait for command
-        env:
-          COMMAND_ID: ${{ steps.send-command.outputs.command_id }}
-        run: |
-          for ATTEMPT in {1..30}; do
-            STATUS=$(aws ssm list-command-invocations \
-              --command-id "$COMMAND_ID" \
-              --details \
-              --query "CommandInvocations[0].Status" \
-              --output text)
-            
-            echo "SSM command status: $STATUS"
-
-            case "$STATUS" in 
-              Success)
-                aws ssm list-command-invocations \
-                  --command-id "$COMMAND_ID" \
-                  --details \
-                  --query "CommandInvocations[0].CommandPlugins[0].Output" \
-                  --output text
-                exit 0
-                ;;
-              Failed|Cancelled|TimedOut)
-                aws ssm list-command-invocations \
-                  --command-id "$COMMAND_ID" \
-                  --details 
-                exit 1
-                ;;
-            esac
-
-            sleep 2
-          done
-
-          echo "Timed out waiting for SSM command"
-          exit 1

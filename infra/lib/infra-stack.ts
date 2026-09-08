@@ -71,6 +71,7 @@ export class InfraStack extends cdk.Stack {
           }),
         },
       ],
+      userDataCausesReplacement: true,
     })
 
     new cdk.CfnOutput(this, "InstanceId", {

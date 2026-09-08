@@ -56,7 +56,7 @@ export class PipelineStack extends cdk.Stack {
 
     githubDeploymentRole.addToPolicy(
       new iam.PolicyStatement({
-        actions: ["ssm:GetCommandInvocation"],
+        actions: ["ssm:GetCommandInvocation", "ssm:ListCommandInvocations"],
         resources: ["*"],
       }),
     )

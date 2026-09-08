@@ -113,3 +113,68 @@ jobs:
 
       - name: Deploy Shipyard stack
         run: npx cdk deploy ShipyardStack --require-approval never
+
+  test-ssm-connection:
+    name: Test SSM Connection
+    needs: deploy-infra
+    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+    runs-on: ubuntu-latest
+
+    permissions:
+      contents: read
+      id-token: write
+
+    steps:
+      - name: Configure AWS credentials
+        uses: aws-actions/configure-aws-credentials@v6
+        with:
+          role-to-assume: ${{ vars.AWS_DEPLOYMENT_ROLE_ARN }}
+          aws-region: ${{ vars.AWS_REGION }}
+
+      - name: Send test command
+        id: send-command
+        run: |
+          COMMAND_ID=$(aws ssm send-command \
+            --targets "Key=tag:Project,Values=Shipyard" \
+            --parameters 'commands=["docker compose version"]' \
+            --comment "Verify Docker Compose from Github Actions" \
+            --query "Command.CommandId" \
+            --output text)
+
+          echo "command_id=$COMMAND_ID" >> "$GITHUB_OUTPUT"
+
+      - name: Wait for command
+        env:
+          COMMAND_ID: ${{ steps.send-command.outputs.command_id }}
+        run: |
+          for ATTEMPT in {1..30}; do
+            STATUS=$(aws ssm list-command-invocations \
+              --command-id "$COMMAND_ID" \
+              --details \
+              --query "CommandInvocations[0].Status" \
+              --output text)
+            
+            echo "SSM command status: $STATUS"
+
+            case "$STATUS" in 
+              Success)
+                aws ssm list-command-invocations \
+                  --command-id "$COMMAND_ID" \
+                  --details \
+                  --query "CommandInvocations[0].CommandPlugins[0].Output" \
+                  --output text
+                exit 0
+                ;;
+              Failed|Cancelled|TimedOut)
+                aws ssm list-command-invocations \
+                  --command-id "$COMMAND_ID" \
+                  --details 
+                exit 1
+                ;;
+            esac
+
+            sleep 2
+          done
+
+          echo "Timed out waiting for SSM command"
+          exit 1

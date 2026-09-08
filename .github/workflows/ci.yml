@@ -135,6 +135,7 @@ jobs:
         id: send-command
         run: |
           COMMAND_ID=$(aws ssm send-command \
+            --document-name "AWS-RunShellScript" \
             --targets "Key=tag:Project,Values=Shipyard" \
             --parameters 'commands=["docker compose version"]' \
             --comment "Verify Docker Compose from Github Actions" \

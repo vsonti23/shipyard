@@ -22,7 +22,7 @@ export class PipelineStack extends cdk.Stack {
           StringEquals: {
             "token.actions.githubusercontent.com:aud": "sts.amazonaws.com",
             "token.actions.githubusercontent.com:sub":
-              "repo:vsonti23/shipyard:ref:refs/heads/main",
+              "repo:vsonti23@173084278/shipyard@1359570164:ref:refs/heads/main",
           },
         },
       ),

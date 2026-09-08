@@ -74,6 +74,8 @@ export class InfraStack extends cdk.Stack {
       userDataCausesReplacement: true,
     })
 
+    cdk.Tags.of(instance).add("Project", "Shipyard")
+
     new cdk.CfnOutput(this, "InstanceId", {
       value: instance.instanceId,
     })

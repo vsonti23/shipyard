@@ -79,6 +79,8 @@ jobs:
     needs: publish-image
     if: github.event_name == 'push' && github.ref == 'refs/heads/main'
     runs-on: ubuntu-latest
+    env:
+      ALLOWED_HTTP_CIDR: ${{ secrets.ALLOWED_HTTP_CIDR }}
 
     permissions:
       contents: read
@@ -107,6 +109,15 @@ jobs:
         with:
           role-to-assume: ${{ vars.AWS_DEPLOYMENT_ROLE_ARN }}
           aws-region: ${{ vars.AWS_REGION }}
+
+      - name: Verify deployment configuration
+        run: |
+          if [[ -z "$ALLOWED_HTTP_CIDR" ]]; then
+            echo "ALLOWED_HTTP_CIDR is unavailable"
+            exit 1
+          fi
+
+          echo "ALLOWED_HTTP_CIDR is available"
 
       - name: Synthesize Shipyard stack
         run: npx cdk synth ShipyardStack

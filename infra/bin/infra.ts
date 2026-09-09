@@ -9,5 +9,11 @@ const env = {
   region: process.env.CDK_DEFAULT_REGION,
 }
 
+const allowedHttpCidr = process.env.ALLOWED_HTTP_CIDR
+
+if (!allowedHttpCidr) {
+  throw new Error("ALLOWED_HTTP_CIDR is required")
+}
+
 new PipelineStack(app, "PipelineStack", { env })
-new InfraStack(app, "ShipyardStack", { env })
+new InfraStack(app, "ShipyardStack", { env, allowedHttpCidr })

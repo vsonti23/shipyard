@@ -2,10 +2,13 @@ import * as cdk from "aws-cdk-lib/core"
 import * as ec2 from "aws-cdk-lib/aws-ec2"
 import * as iam from "aws-cdk-lib/aws-iam"
 import { Construct } from "constructs"
-// import * as sqs from 'aws-cdk-lib/aws-sqs';
+
+interface ShipyardStackProps extends cdk.StackProps {
+  allowedHttpCidr: string
+}
 
 export class InfraStack extends cdk.Stack {
-  constructor(scope: Construct, id: string, props?: cdk.StackProps) {
+  constructor(scope: Construct, id: string, props: ShipyardStackProps) {
     super(scope, id, props)
 
     const vpc = new ec2.Vpc(this, "ShipyardVpc", {
@@ -28,7 +31,7 @@ export class InfraStack extends cdk.Stack {
     })
 
     securityGroup.addIngressRule(
-      ec2.Peer.anyIpv4(),
+      ec2.Peer.ipv4(props.allowedHttpCidr),
       ec2.Port.tcp(80),
       "Allow HTTP traffic",
     )

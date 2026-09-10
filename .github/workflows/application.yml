@@ -3,8 +3,32 @@ name: CI
 on:
   push:
     branches: [main]
+    paths:
+      - "src/**"
+      - "test/**"
+      - "tests/**"
+      - "package.json"
+      - "package-lock.json"
+      - "tsconfig.json"
+      - "Dockerfile"
+      - ".dockerignore"
+      - ".nvmrc"
+      - "deploy/**"
+      - ".github/workflows/application.yml"
   pull_request:
     branches: [main]
+    paths:
+      - "src/**"
+      - "test/**"
+      - "tests/**"
+      - "package.json"
+      - "package-lock.json"
+      - "tsconfig.json"
+      - "Dockerfile"
+      - ".dockerignore"
+      - ".nvmrc"
+      - "deploy/**"
+      - ".github/workflows/application.yml"
 
 permissions:
   contents: read
@@ -74,51 +98,9 @@ jobs:
           cache-from: type=gha
           cache-to: type=gha,mode=max
 
-  deploy-infra:
-    name: Deploy Infra
-    needs: publish-image
-    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
-    runs-on: ubuntu-latest
-    env:
-      ALLOWED_HTTP_CIDR: ${{ secrets.ALLOWED_HTTP_CIDR }}
-
-    permissions:
-      contents: read
-      id-token: write
-
-    defaults:
-      run:
-        working-directory: infra
-
-    steps:
-      - name: Check out repository
-        uses: actions/checkout@v6
-
-      - name: Set up Node.js
-        uses: actions/setup-node@v6
-        with:
-          node-version-file: .nvmrc
-          cache: npm
-          cache-dependency-path: infra/package-lock.json
-
-      - name: Install infra deps
-        run: npm ci
-
-      - name: Configure AWS credentials
-        uses: aws-actions/configure-aws-credentials@v6
-        with:
-          role-to-assume: ${{ vars.AWS_DEPLOYMENT_ROLE_ARN }}
-          aws-region: ${{ vars.AWS_REGION }}
-
-      - name: Synthesize Shipyard stack
-        run: npx cdk synth ShipyardStack
-
-      - name: Deploy Shipyard stack
-        run: npx cdk deploy ShipyardStack --require-approval never
-
   deploy-app:
     name: Deploy Application
-    needs: deploy-infra
+    needs: publish-image
     if: github.event_name == 'push' && github.ref == 'refs/heads/main'
     runs-on: ubuntu-latest
 

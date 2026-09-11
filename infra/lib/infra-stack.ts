@@ -89,10 +89,32 @@ export class InfraStack extends cdk.Stack {
     })
 
     instance.addUserData(
+      "set -euo pipefail",
       "dnf install -y docker",
       "systemctl enable docker",
       "systemctl start docker",
-      "docker pull ghcr.io/vsonti/shipyard:latest",
+
+      [
+        'GHCR_TOKEN="$(aws ssm get-parameter',
+        "--region us-east-1",
+        "--name /shipyard/ghcr/token",
+        "--with-decryption",
+        "--query Parameter.Value",
+        '--output text)"',
+      ].join(" "),
+
+      'DOCKER_CONFIG_DIR="$(mktemp -d)"',
+      'export DOCKER_CONFIG="$DOCKER_CONFIG_DIR"',
+
+      [
+        "printf '%s' \"$GHCR_TOKEN\" |",
+        "docker login ghcr.io",
+        "--username vsonti23",
+        "--password-stdin",
+      ].join(" "),
+
+      "docker pull ghcr.io/vsonti23/shipyard:latest",
+
       [
         "docker run",
         "--detach",
@@ -101,6 +123,10 @@ export class InfraStack extends cdk.Stack {
         "--publish 80:3000",
         "ghcr.io/vsonti23/shipyard:latest",
       ].join(" "),
+
+      "unset GHCR_TOKEN",
+      'rm -f "$DOCKER_CONFIG_DIR/config.json"',
+      'rmdir "$DOCKER_CONFIG_DIR"',
     )
   }
 }

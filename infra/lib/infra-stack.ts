@@ -94,6 +94,17 @@ export class InfraStack extends cdk.Stack {
       "systemctl enable docker",
       "systemctl start docker",
 
+      "mkdir -p /usr/local/lib/docker/cli-plugins",
+
+      [
+        "curl --fail --location --silent --show-error",
+        "https://github.com/docker/compose/releases/download/v5.3.0/docker-compose-linux-aarch64",
+        "--output /usr/local/lib/docker/cli-plugins/docker-compose",
+      ].join(" "),
+
+      "chmod +x /usr/local/lib/docker/cli-plugins/docker-compose",
+      "docker compose version",
+
       [
         'GHCR_TOKEN="$(aws ssm get-parameter',
         "--region us-east-1",

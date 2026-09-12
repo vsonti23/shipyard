@@ -3,6 +3,7 @@
 set -euo pipefail
 
 IMAGE_TAG="${1:?An image tag is required}"
+ECR_REGISTRY = "${2:?An ECR registry is required}"
 
 if [[ ! "$IMAGE_TAG" =~ ^[0-9a-f]{40,64}$ ]]; then
   echo "Image tag must be a Git commit SHA"
@@ -11,9 +12,8 @@ fi
 
 cd /opt/shipyard
 
-printf 'SHIPYARD_IMAGE_TAG=%s\n' "$IMAGE_TAG" > .env
-
-ECR_REGISTRY="869935077628.dkr.ecr.us-east-1.amazonaws.com"
+printf 'SHIPYARD_IMAGE_TAG=%s\nECR_REGISTRY=%s\n' \
+  "$IMAGE_TAG" "$ECR_REGISTRY" > .env
 
 aws ecr get-login-password --region us-east-1 |
   docker login \

@@ -119,6 +119,9 @@ jobs:
           cache-from: type=gha
           cache-to: type=gha,mode=max
 
+    outputs:
+      ecr-registry: ${{ steps.ecr-login.outputs.registry }}
+
   deploy-app:
     name: Deploy Application
     needs: publish-image
@@ -151,11 +154,13 @@ jobs:
           COMPOSE_BASE64: ${{ steps.deployment-files.outputs.compose }}
           SCRIPT_BASE64: ${{ steps.deployment-files.outputs.script }}
           IMAGE_TAG: ${{ github.sha }}
+          ECR_REGISTRY: ${{ needs.publish-image.outputs.ecr-registry }}
         run: |
           PARAMETERS=$(jq --null-input \
             --arg compose "$COMPOSE_BASE64" \
             --arg script "$SCRIPT_BASE64" \
             --arg imageTag "$IMAGE_TAG" \
+            --arg registry "$ECR_REGISTRY" \
             '{
               commands: [
                 "set -eu",
@@ -163,7 +168,7 @@ jobs:
                 ("printf %s " + ($compose | @sh) + " | base64 --decode > /opt/shipyard/compose.yaml"),
                 ("printf %s " + ($script | @sh) + " | base64 --decode > /opt/shipyard/deploy.sh"),
                 "chmod +x /opt/shipyard/deploy.sh",
-                ("bash /opt/shipyard/deploy.sh " + ($imageTag | @sh))
+                ("bash /opt/shipyard/deploy.sh " + ($imageTag | @sh) + " " + ($registry | @sh))
               ]
             }')
 

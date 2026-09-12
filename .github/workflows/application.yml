@@ -70,6 +70,7 @@ jobs:
     permissions:
       contents: read
       packages: write
+      id-token: write
 
     steps:
       - name: Check out source
@@ -88,6 +89,22 @@ jobs:
           username: ${{ github.actor }}
           password: ${{ secrets.GITHUB_TOKEN }}
 
+      - name: Configure AWS credentials
+        uses: aws-actions/configure-aws-credentials@v6
+        with:
+          role-to-assume: ${{ vars.AWS_DEPLOYMENT_ROLE_ARN }}
+          aws-region: ${{ vars.AWS_REGION }}
+
+      - name: Log in to Amazon ECR
+        id: ecr-login
+        run: |
+          REGISTRY="$(aws sts get-caller identity --qyer Account --output text).dkr.ecr.${{vars.AWS_REGION}}.amazonaws.com"
+
+          aws ecr get-login-password --region "${{ vars. AWS_REGION }}" |
+              docker login --username AWS --password-stdin "$REGISTRY"
+
+          echo "registry=$REGISTRY" >> "$GITHUB_OUTPUT"
+
       - name: Build and publish image
         uses: docker/build-push-action@v7
         with:
@@ -97,6 +114,8 @@ jobs:
           tags: |
             ghcr.io/vsonti23/shipyard:${{ github.sha }}
             ghcr.io/vsonti23/shipyard:latest
+            ${{ steps.ecr-login.outputs.registry }}/shipyard:${{ github.sha }}
+            ${{ steps.ecr-login.outputs.registry }}/shipyard:latest
           cache-from: type=gha
           cache-to: type=gha,mode=max
 

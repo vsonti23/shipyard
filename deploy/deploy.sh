@@ -3,7 +3,7 @@
 set -euo pipefail
 
 IMAGE_TAG="${1:?An image tag is required}"
-ECR_REGISTRY = "${2:?An ECR registry is required}"
+ECR_REGISTRY="${2:?An ECR registry is required}"
 
 if [[ ! "$IMAGE_TAG" =~ ^[0-9a-f]{40,64}$ ]]; then
   echo "Image tag must be a Git commit SHA"
@@ -15,18 +15,21 @@ cd /opt/shipyard
 printf 'SHIPYARD_IMAGE_TAG=%s\nECR_REGISTRY=%s\n' \
   "$IMAGE_TAG" "$ECR_REGISTRY" > .env
 
-aws ecr get-login-password --region us-east-1 |
-  docker login \
-   --username AWS \
-   --password-stdnin \
-   "$ECR_REGISTRY"
-  
+DOCKER_CONFIG_DIR=${mktemp -d}
+export DOCKER_CONFIG="$DOCKER_CONFIG_DIR"
+
 cleanup() {
   rm -f "$DOCKER_CONFIG_DIR/config.json"
   rmdir "$DOCKER_CONFIG_DIR" 2>/dev/null || true
 }
 
 trap cleanup EXIT
+
+aws ecr get-login-password --region us-east-1 |
+  docker login \
+   --username AWS \
+   --password-stdin \
+   "$ECR_REGISTRY"
 
 docker compose pull shipyard
 

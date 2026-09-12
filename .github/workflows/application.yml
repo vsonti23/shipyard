@@ -100,7 +100,7 @@ jobs:
         run: |
           REGISTRY="$(aws sts get-caller-identity --query Account --output text).dkr.ecr.${{vars.AWS_REGION}}.amazonaws.com"
 
-          aws ecr get-login-password --region "${{ vars. AWS_REGION }}" |
+          aws ecr get-login-password --region "${{ vars.AWS_REGION }}" |
               docker login --username AWS --password-stdin "$REGISTRY"
 
           echo "registry=$REGISTRY" >> "$GITHUB_OUTPUT"
@@ -181,3 +181,39 @@ jobs:
             --output text)
 
           echo "command_id=$COMMAND_ID" >> "$GITHUB_OUTPUT"
+
+      - name: Wait for deployment result
+        env:
+          COMMAND_ID: ${{ steps.send-command.outputs.command_id }}
+        run: |
+          for ATTEMPT in {1..60}; do
+            STATUS=$(aws ssm list-command-invocations \
+              --command-id "$COMMAND_ID" \
+              --details \
+              --query "CommandInvocations[0].Status" \
+              --output text)
+
+            echo "Deployment status: $STATUS"
+
+            case "$STATUS" in
+              Success)
+                aws ssm list-command-invocations \
+                  --command-id "$COMMAND_ID" \
+                  --details \
+                  --query "CommandInvocations[0].CommandPlugins[*].Output" \
+                  --output text
+                exit 0
+                ;;
+              Failed|Cancelled|TimedOut)
+                aws ssm list-command-invocations \
+                  --command-id "$COMMAND_ID" \
+                  --details
+                exit 1
+                ;;
+            esac
+
+            sleep 5
+          done
+
+          echo "Timed out waiting for deployment"
+          exit 1

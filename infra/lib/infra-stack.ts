@@ -154,6 +154,8 @@ export class InfraStack extends cdk.Stack {
       ],
     })
 
+    repository.grantPull(instance.role)
+
     new cdk.CfnOutput(this, "EcrRepositoryUrl", {
       value: repository.repositoryUri,
     })

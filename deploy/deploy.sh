@@ -13,28 +13,20 @@ cd /opt/shipyard
 
 printf 'SHIPYARD_IMAGE_TAG=%s\n' "$IMAGE_TAG" > .env
 
-GHCR_TOKEN=$(aws ssm get-parameter \
-  --region us-east-1 \
-  --name "/shipyard/ghcr/token" \
-  --with-decryption \
-  --query "Parameter.Value" \
-  --output text)
+ECR_REGISTRY="869935077628.dkr.ecr.us-east-1.amazonaws.com"
 
-DOCKER_CONFIG_DIR=$(mktemp -d)
-export DOCKER_CONFIG="$DOCKER_CONFIG_DIR"
-
+aws ecr get-login-password --region us-east-1 |
+  docker login \
+   --username AWS \
+   --password-stdnin \
+   "$ECR_REGISTRY"
+  
 cleanup() {
-  unset GHCR_TOKEN
   rm -f "$DOCKER_CONFIG_DIR/config.json"
   rmdir "$DOCKER_CONFIG_DIR" 2>/dev/null || true
 }
 
 trap cleanup EXIT
-
-printf '%s' "$GHCR_TOKEN" |
-  docker login ghcr.io \
-    --username "vsonti23" \
-    --password-stdin
 
 docker compose pull shipyard
 

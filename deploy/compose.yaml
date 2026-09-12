@@ -1,6 +1,6 @@
 services:
   shipyard:
-    image: ghcr.io/vsonti23/shipyard:${SHIPYARD_IMAGE_TAG?SHIPYARD_IMAGE_TAG IS REQUIRED}
+    image: 869935077628.dkr.ecr.us-east-1.amazonaws.com/shipyard:${SHIPYARD_IMAGE_TAG?SHIPYARD_IMAGE_TAG IS REQUIRED}
     container_name: shipyard
     restart: unless-stopped
     ports:

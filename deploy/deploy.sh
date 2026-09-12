@@ -15,7 +15,7 @@ cd /opt/shipyard
 printf 'SHIPYARD_IMAGE_TAG=%s\nECR_REGISTRY=%s\n' \
   "$IMAGE_TAG" "$ECR_REGISTRY" > .env
 
-DOCKER_CONFIG_DIR=${mktemp -d}
+DOCKER_CONFIG_DIR=$(mktemp -d)
 export DOCKER_CONFIG="$DOCKER_CONFIG_DIR"
 
 cleanup() {

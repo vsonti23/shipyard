@@ -50,7 +50,7 @@ jobs:
         run: npm test
 
       - name: Synthesize Shipyard Stack
-        run: npx cdk synth ShipyardStack
+        run: npx cdk synth -all
 
   deploy-infra:
     name: Deploy Infrastructure
@@ -90,7 +90,7 @@ jobs:
           aws-region: ${{ vars.AWS_REGION }}
 
       - name: Synthesize Shipyard stack
-        run: npx cdk synth ShipyardStack
+        run: npx cdk synth --all
 
       - name: Deploy Shipyard Stack
-        run: npx cdk deploy ShipyardStack --require-approval never
+        run: npx cdk deploy --all --require-approval never

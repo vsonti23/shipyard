@@ -1,5 +1,6 @@
 import * as cdk from "aws-cdk-lib"
 import * as iam from "aws-cdk-lib/aws-iam"
+import * as ecr from "aws-cdk-lib/aws-ecr"
 import { Construct } from "constructs"
 
 export class PipelineStack extends cdk.Stack {
@@ -30,6 +31,14 @@ export class PipelineStack extends cdk.Stack {
         "Allows the shipyard main branch to deploy through Github Actions",
       maxSessionDuration: cdk.Duration.hours(1),
     })
+
+    const repository = ecr.Repository.fromRepositoryName(
+      this,
+      "ShipyardRepository",
+      "shipyard",
+    )
+
+    repository.grantPullPush(githubDeploymentRole)
 
     githubDeploymentRole.addToPolicy(
       new iam.PolicyStatement({

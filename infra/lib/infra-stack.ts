@@ -89,58 +89,6 @@ export class InfraStack extends cdk.Stack {
       description: "URL to check the health of the Shipyard server",
     })
 
-    instance.addUserData(
-      "set -euo pipefail",
-      "dnf install -y docker",
-      "systemctl enable docker",
-      "systemctl start docker",
-
-      "mkdir -p /usr/local/lib/docker/cli-plugins",
-
-      [
-        "curl --fail --location --silent --show-error",
-        "https://github.com/docker/compose/releases/download/v5.3.0/docker-compose-linux-aarch64",
-        "--output /usr/local/lib/docker/cli-plugins/docker-compose",
-      ].join(" "),
-
-      "chmod +x /usr/local/lib/docker/cli-plugins/docker-compose",
-      "docker compose version",
-
-      [
-        'GHCR_TOKEN="$(aws ssm get-parameter',
-        "--region us-east-1",
-        "--name /shipyard/ghcr/token",
-        "--with-decryption",
-        "--query Parameter.Value",
-        '--output text)"',
-      ].join(" "),
-
-      'DOCKER_CONFIG_DIR="$(mktemp -d)"',
-      'export DOCKER_CONFIG="$DOCKER_CONFIG_DIR"',
-
-      [
-        "printf '%s' \"$GHCR_TOKEN\" |",
-        "docker login ghcr.io",
-        "--username vsonti23",
-        "--password-stdin",
-      ].join(" "),
-
-      "docker pull ghcr.io/vsonti23/shipyard:latest",
-
-      [
-        "docker run",
-        "--detach",
-        "--name shipyard",
-        "--restart unless-stopped",
-        "--publish 80:3000",
-        "ghcr.io/vsonti23/shipyard:latest",
-      ].join(" "),
-
-      "unset GHCR_TOKEN",
-      'rm -f "$DOCKER_CONFIG_DIR/config.json"',
-      'rmdir "$DOCKER_CONFIG_DIR"',
-    )
-
     const repository = new ecr.Repository(this, "ShipyardRepository", {
       repositoryName: "shipyard",
       imageTagMutability: ecr.TagMutability.MUTABLE,
@@ -159,5 +107,63 @@ export class InfraStack extends cdk.Stack {
     new cdk.CfnOutput(this, "EcrRepositoryUrl", {
       value: repository.repositoryUri,
     })
+
+    const ecrRegistry = cdk.Fn.select(
+      0,
+      cdk.Fn.split("/", repository.repositoryUri),
+    )
+
+    instance.addUserData(
+      "set -euo pipefail",
+
+      "dnf install -y docker",
+      "systemctl enable docker",
+      "systemctl start docker",
+
+      "mkdir -p /usr/local/lib/docker/cli-plugins",
+
+      [
+        "curl --fail --location --silent --show-error",
+        "https://github.com/docker/compose/releases/download/v5.3.0/docker-compose-linux-aarch64",
+        "--output /usr/local/lib/docker/cli-plugins/docker-compose",
+      ].join(" "),
+
+      "chmod +x /usr/local/lib/docker/cli-plugins/docker-compose",
+      "docker compose version",
+
+      `ECR_REGISTRY="${ecrRegistry}"`,
+      `ECR_IMAGE="${repository.repositoryUri}:latest"`,
+
+      'DOCKER_CONFIG_DIR="$(mktemp -d)"',
+      'export DOCKER_CONFIG="$DOCKER_CONFIG_DIR"',
+
+      [
+        "cleanup() {",
+        'rm -f "$DOCKER_CONFIG_DIR/config.json";',
+        'rmdir "$DOCKER_CONFIG_DIR" 2>/dev/null || true;',
+        "}",
+      ].join(" "),
+
+      "trap cleanup EXIT",
+
+      [
+        `aws ecr get-login-password --region "${cdk.Aws.REGION}" |`,
+        "docker login",
+        "--username AWS",
+        "--password-stdin",
+        '"$ECR_REGISTRY"',
+      ].join(" "),
+
+      'docker pull "$ECR_IMAGE"',
+
+      [
+        "docker run",
+        "--detach",
+        "--name shipyard",
+        "--restart unless-stopped",
+        "--publish 80:3000",
+        '"$ECR_IMAGE"',
+      ].join(" "),
+    )
   }
 }

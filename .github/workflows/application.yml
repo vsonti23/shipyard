@@ -98,7 +98,7 @@ jobs:
       - name: Log in to Amazon ECR
         id: ecr-login
         run: |
-          REGISTRY="$(aws sts get-caller identity --qyer Account --output text).dkr.ecr.${{vars.AWS_REGION}}.amazonaws.com"
+          REGISTRY="$(aws sts get-caller-identity --query Account --output text).dkr.ecr.${{vars.AWS_REGION}}.amazonaws.com"
 
           aws ecr get-login-password --region "${{ vars. AWS_REGION }}" |
               docker login --username AWS --password-stdin "$REGISTRY"

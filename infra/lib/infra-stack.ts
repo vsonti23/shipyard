@@ -1,6 +1,7 @@
 import * as cdk from "aws-cdk-lib/core"
 import * as ec2 from "aws-cdk-lib/aws-ec2"
 import * as iam from "aws-cdk-lib/aws-iam"
+import * as ecr from "aws-cdk-lib/aws-ecr"
 import { Construct } from "constructs"
 
 interface ShipyardStackProps extends cdk.StackProps {
@@ -139,5 +140,22 @@ export class InfraStack extends cdk.Stack {
       'rm -f "$DOCKER_CONFIG_DIR/config.json"',
       'rmdir "$DOCKER_CONFIG_DIR"',
     )
+
+    const repository = new ecr.Repository(this, "ShipyardRepository", {
+      repositoryName: "shipyard",
+      imageTagMutability: ecr.TagMutability.MUTABLE,
+      removalPolicy: cdk.RemovalPolicy.DESTROY,
+      emptyOnDelete: true,
+      lifecycleRules: [
+        {
+          description: "Keep the ten most recent images",
+          maxImageCount: 10,
+        },
+      ],
+    })
+
+    new cdk.CfnOutput(this, "EcrRepositoryUrl", {
+      value: repository.repositoryUri,
+    })
   }
 }

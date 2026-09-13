@@ -2,6 +2,7 @@ import * as cdk from "aws-cdk-lib/core"
 import * as ec2 from "aws-cdk-lib/aws-ec2"
 import * as iam from "aws-cdk-lib/aws-iam"
 import * as ecr from "aws-cdk-lib/aws-ecr"
+import * as ecs from "aws-cdk-lib/aws-ecs"
 import { Construct } from "constructs"
 
 interface ShipyardStackProps extends cdk.StackProps {
@@ -23,6 +24,11 @@ export class InfraStack extends cdk.Stack {
           cidrMask: 24,
         },
       ],
+    })
+
+    const cluster = new ecs.Cluster(this, "ShipyardCluster", {
+      vpc,
+      clusterName: "shipyard",
     })
 
     const securityGroup = new ec2.SecurityGroup(this, "ShipyardSecurityGroup", {

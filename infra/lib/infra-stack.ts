@@ -168,6 +168,28 @@ export class InfraStack extends cdk.Stack {
       value: repository.repositoryUri,
     })
 
+    const taskDefinition = new ecs.Ec2TaskDefinition(
+      this,
+      "ShipyardTaskDefinition",
+      {
+        family: "shipyard",
+        networkMode: ecs.NetworkMode.BRIDGE,
+      },
+    )
+
+    const container = taskDefinition.addContainer("ShipyardContainer", {
+      containerName: "shipyard",
+      image: ecs.ContainerImage.fromEcrRepository(repository, "latest"),
+      cpu: 256,
+      memoryReservationMiB: 256,
+    })
+
+    container.addPortMappings({
+      containerPort: 3000,
+      hostPort: 80,
+      protocol: ecs.Protocol.TCP,
+    })
+
     const ecrRegistry = cdk.Fn.select(
       0,
       cdk.Fn.split("/", repository.repositoryUri),

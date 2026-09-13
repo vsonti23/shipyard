@@ -32,6 +32,10 @@ on:
       - "deploy/**"
       - ".github/workflows/application.yml"
 
+concurrency:
+  group: shipyard-application-${{ github.ref }}
+  cancel-in-progress: false
+
 permissions:
   contents: read
 

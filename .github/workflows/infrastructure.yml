@@ -14,6 +14,10 @@ on:
       - ".nvmrc"
       - ".github/workflows/infrastructure.yml"
 
+concurrency:
+  group: shipyard-infrastructure-${{ github.ref }}
+  cancel-in-progress: false
+
 permissions:
   contents: read
 

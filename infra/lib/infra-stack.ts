@@ -196,6 +196,10 @@ export class InfraStack extends cdk.Stack {
       serviceName: "shipyard",
       desiredCount: 1,
       launchType: "EC2",
+      deploymentConfiguration: {
+        minimumHealthyPercent: 0,
+        maximumPercent: 100,
+      },
     })
 
     new cdk.CfnOutput(this, "ECSHealthUrl", {

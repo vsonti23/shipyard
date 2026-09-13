@@ -1,7 +1,0 @@
-services:
-  shipyard:
-    image: ${ECR_REGISTRY:?ECR_REGISTRY is required}/shipyard:${SHIPYARD_IMAGE_TAG:?SHIPYARD_IMAGE_TAG is required}
-    container_name: shipyard
-    restart: unless-stopped
-    ports:
-      - "80:3000"

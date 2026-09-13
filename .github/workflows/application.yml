@@ -15,7 +15,6 @@ on:
       - "Dockerfile"
       - ".dockerignore"
       - ".nvmrc"
-      - "deploy/**"
       - ".github/workflows/application.yml"
   pull_request:
     branches: [main]
@@ -29,7 +28,6 @@ on:
       - "Dockerfile"
       - ".dockerignore"
       - ".nvmrc"
-      - "deploy/**"
       - ".github/workflows/application.yml"
 
 concurrency:

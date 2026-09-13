@@ -199,7 +199,7 @@ export class InfraStack extends cdk.Stack {
     })
 
     new cdk.CfnOutput(this, "ECSHealthUrl", {
-      value: `http:??${ecsInstance.instancePublicIp}/health`,
+      value: `http://${ecsInstance.instancePublicIp}/health`,
       description: "Health URL for the ECS-managed Shipyard application",
     })
 

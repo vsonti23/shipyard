@@ -42,6 +42,36 @@ export class PipelineStack extends cdk.Stack {
 
     githubDeploymentRole.addToPolicy(
       new iam.PolicyStatement({
+        actions: ["ecs:DescribeTaskDefinition", "ecs:RegisterTaskDefinition"],
+        resources: ["*"],
+      }),
+    )
+
+    githubDeploymentRole.addToPolicy(
+      new iam.PolicyStatement({
+        actions: ["ecs:DescribeServices", "ecs:UpdateService"],
+        resources: [
+          `arn:${cdk.Aws.PARTITION}:ecs:${cdk.Aws.REGION}:${cdk.Aws.ACCOUNT_ID}:service/shipyard/shipyard`,
+        ],
+      }),
+    )
+
+    githubDeploymentRole.addToPolicy(
+      new iam.PolicyStatement({
+        actions: ["iam:PassRole"],
+        resources: [
+          `arn:${cdk.Aws.PARTITION}:iam::${cdk.Aws.ACCOUNT_ID}:role/ShipyardStack-ShipyardTaskDefinition*`,
+        ],
+        conditions: {
+          StringEquals: {
+            "iam:PassedToService": "ecs-tasks.amazonaws.com",
+          },
+        },
+      }),
+    )
+
+    githubDeploymentRole.addToPolicy(
+      new iam.PolicyStatement({
         actions: ["ssm:SendCommand"],
         resources: [
           `arn:${cdk.Aws.PARTITION}:ssm:${cdk.Aws.REGION}::document/AWS-RunShellScript`,

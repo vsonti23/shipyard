@@ -198,7 +198,7 @@ export class InfraStack extends cdk.Stack {
       launchType: "EC2",
       deploymentConfiguration: {
         minimumHealthyPercent: 0,
-        maximumPercent: 100,
+        maximumPercent: 200,
       },
     })
 

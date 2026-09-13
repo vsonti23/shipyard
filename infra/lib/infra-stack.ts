@@ -39,7 +39,7 @@ export class InfraStack extends cdk.Stack {
 
     securityGroup.addIngressRule(
       ec2.Peer.ipv4(props.allowedHttpCidr),
-      ec2.Port.tcp(80),
+      ec2.Port.tcpRange(32768, 65535),
       "Allow HTTP traffic",
     )
 
@@ -138,7 +138,7 @@ export class InfraStack extends cdk.Stack {
 
     container.addPortMappings({
       containerPort: 3000,
-      hostPort: 80,
+      hostPort: 0,
       protocol: ecs.Protocol.TCP,
     })
 

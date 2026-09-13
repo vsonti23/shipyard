@@ -140,6 +140,7 @@ jobs:
             --task-definition shipyard \
             --query taskDefinition \
             > task-definition.json
+
       - name: Set image in task definition
         id: task-definition
         uses: aws-actions/amazon-ecs-render-task-definition@v1

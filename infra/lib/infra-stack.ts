@@ -49,6 +49,60 @@ export class InfraStack extends cdk.Stack {
       "Allow HTTPS traffic",
     )
 
+    const ecsInstanceRole = new iam.Role(this, "ShipyardEcsInstanceRole", {
+      assumedBy: new iam.ServicePrincipal("ec2.amazonaws.com"),
+      description: "Role for the shipyard ECS constainer instance",
+    })
+
+    ecsInstanceRole.addManagedPolicy(
+      iam.ManagedPolicy.fromAwsManagedPolicyName(
+        "service-role/AmazonEC2ContainerServiceforEC2Role",
+      ),
+    )
+
+    ecsInstanceRole.addManagedPolicy(
+      iam.ManagedPolicy.fromAwsManagedPolicyName(
+        "AmazonSSMManagedInstanceCore",
+      ),
+    )
+
+    const ecsUserData = ec2.UserData.forLinux()
+
+    ecsUserData.addCommands(
+      `echo "ECS_CLUSTER=${cluster.clusterName}" >> /etc/ecs/ecs.config`,
+    )
+
+    const ecsInstance = new ec2.Instance(this, "ShipyardEcsInstance", {
+      vpc,
+      vpcSubnets: { subnetType: ec2.SubnetType.PUBLIC },
+      instanceType: new ec2.InstanceType("t4g.micro"),
+      machineImage: ecs.EcsOptimizedImage.amazonLinux2023(
+        ecs.AmiHardwareType.ARM,
+      ),
+      securityGroup,
+      role: ecsInstanceRole,
+      userData: ecsUserData,
+      associatePublicIpAddress: true,
+      requireImdsv2: true,
+      blockDevices: [
+        {
+          deviceName: "/dev/xvda",
+          volume: ec2.BlockDeviceVolume.ebs(10, {
+            volumeType: ec2.EbsDeviceVolumeType.GP3,
+            encrypted: true,
+            deleteOnTermination: true,
+          }),
+        },
+      ],
+      userDataCausesReplacement: true,
+    })
+
+    cdk.Tags.of(ecsInstance).add("Project", "ShipyardEcs")
+
+    new cdk.CfnOutput(this, "EcsInstanceId", {
+      value: ecsInstance.instanceId,
+    })
+
     const instanceRole = new iam.Role(this, "ShipyardInstanceRole", {
       assumedBy: new iam.ServicePrincipal("ec2.amazonaws.com"),
       description: "Role for Shipyard EC2 instance",

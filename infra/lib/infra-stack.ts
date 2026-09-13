@@ -103,52 +103,6 @@ export class InfraStack extends cdk.Stack {
       value: ecsInstance.instanceId,
     })
 
-    const instanceRole = new iam.Role(this, "ShipyardInstanceRole", {
-      assumedBy: new iam.ServicePrincipal("ec2.amazonaws.com"),
-      description: "Role for Shipyard EC2 instance",
-    })
-
-    instanceRole.addManagedPolicy(
-      iam.ManagedPolicy.fromAwsManagedPolicyName(
-        "AmazonSSMManagedInstanceCore",
-      ),
-    )
-
-    const instance = new ec2.Instance(this, "ShipyardInstance", {
-      vpc,
-      vpcSubnets: { subnetType: ec2.SubnetType.PUBLIC },
-      instanceType: new ec2.InstanceType("t4g.micro"),
-      machineImage: ec2.MachineImage.latestAmazonLinux2023({
-        cpuType: ec2.AmazonLinuxCpuType.ARM_64,
-      }),
-      securityGroup,
-      role: instanceRole,
-      associatePublicIpAddress: true,
-      requireImdsv2: true,
-      blockDevices: [
-        {
-          deviceName: "/dev/xvda",
-          volume: ec2.BlockDeviceVolume.ebs(10, {
-            volumeType: ec2.EbsDeviceVolumeType.GP3,
-            encrypted: true,
-            deleteOnTermination: true,
-          }),
-        },
-      ],
-      userDataCausesReplacement: true,
-    })
-
-    cdk.Tags.of(instance).add("Project", "Shipyard")
-
-    new cdk.CfnOutput(this, "InstanceId", {
-      value: instance.instanceId,
-    })
-
-    new cdk.CfnOutput(this, "HealthUrl", {
-      value: `http://${instance.instancePublicIp}/health`,
-      description: "URL to check the health of the Shipyard server",
-    })
-
     const repository = new ecr.Repository(this, "ShipyardRepository", {
       repositoryName: "shipyard",
       imageTagMutability: ecr.TagMutability.MUTABLE,
@@ -161,8 +115,6 @@ export class InfraStack extends cdk.Stack {
         },
       ],
     })
-
-    repository.grantPull(instance.role)
 
     new cdk.CfnOutput(this, "EcrRepositoryUrl", {
       value: repository.repositoryUri,
@@ -206,63 +158,5 @@ export class InfraStack extends cdk.Stack {
       value: `http://${ecsInstance.instancePublicIp}/health`,
       description: "Health URL for the ECS-managed Shipyard application",
     })
-
-    const ecrRegistry = cdk.Fn.select(
-      0,
-      cdk.Fn.split("/", repository.repositoryUri),
-    )
-
-    instance.addUserData(
-      "set -euo pipefail",
-
-      "dnf install -y docker",
-      "systemctl enable docker",
-      "systemctl start docker",
-
-      "mkdir -p /usr/local/lib/docker/cli-plugins",
-
-      [
-        "curl --fail --location --silent --show-error",
-        "https://github.com/docker/compose/releases/download/v5.3.0/docker-compose-linux-aarch64",
-        "--output /usr/local/lib/docker/cli-plugins/docker-compose",
-      ].join(" "),
-
-      "chmod +x /usr/local/lib/docker/cli-plugins/docker-compose",
-      "docker compose version",
-
-      `ECR_REGISTRY="${ecrRegistry}"`,
-      `ECR_IMAGE="${repository.repositoryUri}:latest"`,
-
-      'DOCKER_CONFIG_DIR="$(mktemp -d)"',
-      'export DOCKER_CONFIG="$DOCKER_CONFIG_DIR"',
-
-      [
-        "cleanup() {",
-        'rm -f "$DOCKER_CONFIG_DIR/config.json";',
-        'rmdir "$DOCKER_CONFIG_DIR" 2>/dev/null || true;',
-        "}",
-      ].join(" "),
-
-      "trap cleanup EXIT",
-
-      [
-        `aws ecr get-login-password --region "${cdk.Aws.REGION}" |`,
-        "docker login",
-        "--username AWS",
-        "--password-stdin",
-        '"$ECR_REGISTRY"',
-      ].join(" "),
-
-      'docker pull "$ECR_IMAGE"',
-
-      [
-        "docker run",
-        "--detach",
-        "--name shipyard",
-        "--restart unless-stopped",
-        "--publish 80:3000",
-        '"$ECR_IMAGE"',
-      ].join(" "),
-    )
   }
 }

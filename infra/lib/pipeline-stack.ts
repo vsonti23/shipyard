@@ -70,36 +70,6 @@ export class PipelineStack extends cdk.Stack {
       }),
     )
 
-    githubDeploymentRole.addToPolicy(
-      new iam.PolicyStatement({
-        actions: ["ssm:SendCommand"],
-        resources: [
-          `arn:${cdk.Aws.PARTITION}:ssm:${cdk.Aws.REGION}::document/AWS-RunShellScript`,
-        ],
-      }),
-    )
-
-    githubDeploymentRole.addToPolicy(
-      new iam.PolicyStatement({
-        actions: ["ssm:SendCommand"],
-        resources: [
-          `arn:${cdk.Aws.PARTITION}:ec2:${cdk.Aws.REGION}:${cdk.Aws.ACCOUNT_ID}:instance/*`,
-        ],
-        conditions: {
-          StringEquals: {
-            "ssm:resourceTag/Project": "Shipyard",
-          },
-        },
-      }),
-    )
-
-    githubDeploymentRole.addToPolicy(
-      new iam.PolicyStatement({
-        actions: ["ssm:GetCommandInvocation", "ssm:ListCommandInvocations"],
-        resources: ["*"],
-      }),
-    )
-
     const bootstrapRolePrefix = `arn:${cdk.Aws.PARTITION}:iam::${cdk.Aws.ACCOUNT_ID}:role/cdk-hnb659fds`
 
     githubDeploymentRole.addToPolicy(

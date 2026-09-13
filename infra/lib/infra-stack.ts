@@ -190,11 +190,12 @@ export class InfraStack extends cdk.Stack {
       protocol: ecs.Protocol.TCP,
     })
 
-    const service = new ecs.Ec2Service(this, "ShipyardEcsService", {
+    new ecs.CfnService(this, "ShipyardEcsService", {
       cluster,
       taskDefinition,
       serviceName: "shipyard",
       desiredCount: 1,
+      launchType: "EC2",
     })
 
     new cdk.CfnOutput(this, "ECSHealthUrl", {

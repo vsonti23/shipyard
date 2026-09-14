@@ -57,6 +57,17 @@ export class InfraStack extends cdk.Stack {
       },
     )
 
+    new cdk.CfnOutput(this, "LoadBalancerUrl", {
+      value: `http://${loadBalancer.loadBalancerDnsName}`,
+      description: "Public URL for the Shipyard load balancer",
+    })
+
+    const listener = loadBalancer.addListener("ShipyardHttpListener", {
+      port: 80,
+      protocol: elbv2.ApplicationProtocol.HTTP,
+      open: false,
+    })
+
     const cluster = new ecs.Cluster(this, "ShipyardCluster", {
       vpc,
       clusterName: "shipyard",

@@ -62,17 +62,27 @@ export class InfraStack extends cdk.Stack {
       description: "Public URL for the Shipyard load balancer",
     })
 
+    const targetGroup = new elbv2.ApplicationTargetGroup(
+      this,
+      "ShipyardTargetGroup",
+      {
+        vpc,
+        protocol: elbv2.ApplicationProtocol.HTTP,
+        port: 3000,
+        targetType: elbv2.TargetType.INSTANCE,
+        healthCheck: {
+          path: "/health",
+          protocol: elbv2.Protocol.HTTP,
+          healthyHttpCodes: "200",
+        },
+      },
+    )
+
     const listener = loadBalancer.addListener("ShipyardHttpListener", {
       port: 80,
       protocol: elbv2.ApplicationProtocol.HTTP,
       open: false,
-      defaultAction: elbv2.ListenerAction.fixedResponse(200, {
-        contentType: "application/json",
-        messageBody: JSON.stringify({
-          status: "ok",
-          source: "load-balancer",
-        }),
-      }),
+      defaultAction: elbv2.ListenerAction.forward([targetGroup]),
     })
 
     const cluster = new ecs.Cluster(this, "ShipyardCluster", {
@@ -160,7 +170,7 @@ export class InfraStack extends cdk.Stack {
       protocol: ecs.Protocol.TCP,
     })
 
-    new ecs.CfnService(this, "ShipyardEcsService", {
+    const ecsService = new ecs.CfnService(this, "ShipyardEcsService", {
       cluster,
       taskDefinition,
       serviceName: "shipyard",
@@ -180,7 +190,16 @@ export class InfraStack extends cdk.Stack {
         minimumHealthyPercent: 0,
         maximumPercent: 200,
       },
+      loadBalancers: [
+        {
+          containerName: "shipyard",
+          containerPort: 3000,
+          targetGroupArn: targetGroup.targetGroupArn,
+        },
+      ],
     })
+
+    ecsService.node.addDependency(listener)
 
     const ecsAutoScalingGroup = new autoscaling.AutoScalingGroup(
       this,

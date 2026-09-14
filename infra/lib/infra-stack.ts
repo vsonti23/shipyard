@@ -186,7 +186,7 @@ export class InfraStack extends cdk.Stack {
       cluster,
       taskDefinition,
       serviceName: "shipyard",
-      desiredCount: 5,
+      desiredCount: 4,
       launchType: "EC2",
       placementStrategies: [
         {
@@ -201,6 +201,10 @@ export class InfraStack extends cdk.Stack {
       deploymentConfiguration: {
         minimumHealthyPercent: 0,
         maximumPercent: 200,
+        deploymentCircuitBreaker: {
+          enable: true,
+          rollback: true,
+        },
       },
       loadBalancers: [
         {

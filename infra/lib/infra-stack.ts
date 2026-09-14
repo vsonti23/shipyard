@@ -73,37 +73,6 @@ export class InfraStack extends cdk.Stack {
       `echo "ECS_CLUSTER=${cluster.clusterName}" >> /etc/ecs/ecs.config`,
     )
 
-    const ecsInstance = new ec2.Instance(this, "ShipyardEcsInstance", {
-      vpc,
-      vpcSubnets: { subnets: [vpc.publicSubnets[0]] },
-      instanceType: new ec2.InstanceType("t4g.micro"),
-      machineImage: ecs.EcsOptimizedImage.amazonLinux2023(
-        ecs.AmiHardwareType.ARM,
-      ),
-      securityGroup,
-      role: ecsInstanceRole,
-      userData: ecsUserData,
-      associatePublicIpAddress: true,
-      requireImdsv2: true,
-      blockDevices: [
-        {
-          deviceName: "/dev/xvda",
-          volume: ec2.BlockDeviceVolume.ebs(30, {
-            volumeType: ec2.EbsDeviceVolumeType.GP3,
-            encrypted: true,
-            deleteOnTermination: true,
-          }),
-        },
-      ],
-      userDataCausesReplacement: true,
-    })
-
-    cdk.Tags.of(ecsInstance).add("Project", "ShipyardEcs")
-
-    new cdk.CfnOutput(this, "EcsInstanceId", {
-      value: ecsInstance.instanceId,
-    })
-
     const repository = new ecr.Repository(this, "ShipyardRepository", {
       repositoryName: "shipyard",
       imageTagMutability: ecr.TagMutability.MUTABLE,
@@ -163,58 +132,6 @@ export class InfraStack extends cdk.Stack {
         minimumHealthyPercent: 0,
         maximumPercent: 200,
       },
-    })
-
-    new cdk.CfnOutput(this, "ECSHealthUrl", {
-      value: `http://${ecsInstance.instancePublicIp}/health`,
-      description: "Health URL for the ECS-managed Shipyard application",
-    })
-
-    const secondEcsUserData = ec2.UserData.forLinux()
-
-    secondEcsUserData.addCommands(
-      `echo "ECS_CLUSTER=${cluster.clusterName}" >> /etc/ecs/ecs.config`,
-    )
-
-    const secondEcsInstance = new ec2.Instance(
-      this,
-      "SecondShipyardEcsInstance",
-      {
-        vpc,
-        vpcSubnets: {
-          subnets: [vpc.publicSubnets[1]],
-        },
-        instanceType: new ec2.InstanceType("t4g.micro"),
-        machineImage: ecs.EcsOptimizedImage.amazonLinux2023(
-          ecs.AmiHardwareType.ARM,
-        ),
-        securityGroup,
-        role: ecsInstanceRole,
-        userData: secondEcsUserData,
-        associatePublicIpAddress: true,
-        requireImdsv2: true,
-        blockDevices: [
-          {
-            deviceName: "/dev/xvda",
-            volume: ec2.BlockDeviceVolume.ebs(30, {
-              volumeType: ec2.EbsDeviceVolumeType.GP3,
-              encrypted: true,
-              deleteOnTermination: true,
-            }),
-          },
-        ],
-        userDataCausesReplacement: true,
-      },
-    )
-
-    cdk.Tags.of(secondEcsInstance).add("Project", "ShipyardEcs")
-
-    new cdk.CfnOutput(this, "SecondEcsInstanceId", {
-      value: secondEcsInstance.instanceId,
-    })
-
-    new cdk.CfnOutput(this, "SecondEcsInstancePublicIp", {
-      value: secondEcsInstance.instancePublicIp,
     })
 
     const ecsAutoScalingGroup = new autoscaling.AutoScalingGroup(

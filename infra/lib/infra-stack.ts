@@ -4,6 +4,7 @@ import * as iam from "aws-cdk-lib/aws-iam"
 import * as ecr from "aws-cdk-lib/aws-ecr"
 import * as ecs from "aws-cdk-lib/aws-ecs"
 import * as autoscaling from "aws-cdk-lib/aws-autoscaling"
+import * as elbv2 from "aws-cdk-lib/aws-elasticloadbalancingv2"
 import { Construct } from "constructs"
 
 interface ShipyardStackProps extends cdk.StackProps {
@@ -26,6 +27,35 @@ export class InfraStack extends cdk.Stack {
         },
       ],
     })
+
+    const loadBalancerSecurityGroup = new ec2.SecurityGroup(
+      this,
+      "ShipyardLoadBalancerSecurityGroup",
+      {
+        vpc,
+        description: "Networks rules for shipyard load balancer",
+        allowAllOutbound: false,
+      },
+    )
+
+    loadBalancerSecurityGroup.addIngressRule(
+      ec2.Peer.ipv4(props.allowedHttpCidr),
+      ec2.Port.tcp(80),
+      "Allow HTTP traffic from the configured network",
+    )
+
+    const loadBalancer = new elbv2.ApplicationLoadBalancer(
+      this,
+      "ShipyardLoadBalancer",
+      {
+        vpc,
+        internetFacing: true,
+        securityGroup: loadBalancerSecurityGroup,
+        vpcSubnets: {
+          subnetType: ec2.SubnetType.PUBLIC,
+        },
+      },
+    )
 
     const cluster = new ecs.Cluster(this, "ShipyardCluster", {
       vpc,

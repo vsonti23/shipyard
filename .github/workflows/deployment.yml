@@ -70,6 +70,7 @@ jobs:
               - ".nvmrc"
               - ".github/workflows/application.yml"
               - ".github/workflows/deployment.yml"
+              - "infra/lib/infra-stack.ts"
 
             infrastructure:
               - "infra/**"

@@ -44,7 +44,7 @@ jobs:
         run: npm test
 
       - name: Synthesize Shipyard Stack
-        run: npx cdk synth -all
+        run: npx cdk synth --all
 
   deploy-infra:
     name: Deploy Infrastructure

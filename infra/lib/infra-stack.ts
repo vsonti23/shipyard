@@ -148,6 +148,16 @@ export class InfraStack extends cdk.Stack {
       serviceName: "shipyard",
       desiredCount: 5,
       launchType: "EC2",
+      placementStrategies: [
+        {
+          type: "spread",
+          field: "attributes:ecs.availability-zone",
+        },
+        {
+          type: "spread",
+          field: "instanceId",
+        },
+      ],
       deploymentConfiguration: {
         minimumHealthyPercent: 0,
         maximumPercent: 200,

@@ -1,21 +1,14 @@
 name: App
 
 on:
-  workflow_dispatch:
+  workflow_call:
+    inputs:
+      deploy:
+        description: Publish and deploy the application after validation
+        required: false
+        type: boolean
+        default: false
 
-  push:
-    branches: [main]
-    paths:
-      - "src/**"
-      - "test/**"
-      - "tests/**"
-      - "package.json"
-      - "package-lock.json"
-      - "tsconfig.json"
-      - "Dockerfile"
-      - ".dockerignore"
-      - ".nvmrc"
-      - ".github/workflows/application.yml"
   pull_request:
     branches: [main]
     paths:
@@ -29,10 +22,6 @@ on:
       - ".dockerignore"
       - ".nvmrc"
       - ".github/workflows/application.yml"
-
-concurrency:
-  group: shipyard-application-${{ github.ref }}
-  cancel-in-progress: false
 
 permissions:
   contents: read
@@ -66,7 +55,7 @@ jobs:
   publish-image:
     name: Build and publish image
     needs: check
-    if: github.event_name == 'push'
+    if: inputs.deploy
     runs-on: ubuntu-latest
 
     permissions:
@@ -92,7 +81,7 @@ jobs:
       - name: Log in to Amazon ECR
         id: ecr-login
         run: |
-          REGISTRY="$(aws sts get-caller-identity --query Account --output text).dkr.ecr.${{vars.AWS_REGION}}.amazonaws.com"
+          REGISTRY="$(aws sts get-caller-identity --query Account --output text).dkr.ecr.${{ vars.AWS_REGION }}.amazonaws.com"
 
           aws ecr get-login-password --region "${{ vars.AWS_REGION }}" |
               docker login --username AWS --password-stdin "$REGISTRY"
@@ -117,7 +106,7 @@ jobs:
   deploy-app:
     name: Deploy Application
     needs: publish-image
-    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+    if: inputs.deploy
     runs-on: ubuntu-latest
 
     permissions:
@@ -152,7 +141,7 @@ jobs:
       - name: Deploy task definition to ECS
         uses: aws-actions/amazon-ecs-deploy-task-definition@v2
         with:
-          task-definition: ${{ steps. task-definition.outputs.task-definition }}
+          task-definition: ${{ steps.task-definition.outputs.task-definition }}
           cluster: shipyard
           service: shipyard
           wait-for-service-stability: true

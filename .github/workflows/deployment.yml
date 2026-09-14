@@ -1,0 +1,115 @@
+name: Deployment
+
+on:
+  workflow_dispatch:
+    inputs:
+      deploy_application:
+        description: Deploy the application
+        required: true
+        type: boolean
+        default: true
+
+      deploy_infrastructure:
+        description: Deploy the infrastructure
+        required: true
+        type: boolean
+        default: false
+
+  push:
+    branches: [main]
+    paths:
+      - "src/**"
+      - "test/**"
+      - "tests/**"
+      - "package.json"
+      - "package-lock.json"
+      - "tsconfig.json"
+      - "Dockerfile"
+      - ".dockerignore"
+      - ".nvmrc"
+      - "infra/**"
+      - ".github/workflows/application.yml"
+      - ".github/workflows/infrastructure.yml"
+      - ".github/workflows/deployment.yml"
+
+concurrency:
+  group: shipyard-deployment-${{ github.ref }}
+  cancel-in-progress: false
+
+permissions:
+  contents: read
+
+jobs:
+  changes:
+    name: Detect Changes
+    runs-on: ubuntu-latest
+
+    outputs:
+      application: ${{ github.event_name == 'workflow_dispatch' && inputs.deploy_application || steps.filter.outputs.application }}
+      infrastructure: ${{ github.event_name == 'workflow_dispatch' && inputs.deploy_infrastructure || steps.filter.outputs.infrastructure }}
+
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v6
+
+      - name: Detect changed areas
+        id: filter
+        if: github.event_name == 'push'
+        uses: dorny/paths-filter@v4
+        with:
+          filters: |
+            application:
+              - "src/**"
+              - "test/**"
+              - "tests/**"
+              - "package.json"
+              - "package-lock.json"
+              - "tsconfig.json"
+              - "Dockerfile"
+              - ".dockerignore"
+              - ".nvmrc"
+              - ".github/workflows/application.yml"
+              - ".github/workflows/deployment.yml"
+
+            infrastructure:
+              - "infra/**"
+              - ".nvmrc"
+              - ".github/workflows/infrastructure.yml"
+              - ".github/workflows/deployment.yml"
+
+  infrastructure:
+    name: Infrastructure
+    needs: changes
+    if: needs.changes.outputs.infrastructure == 'true'
+
+    permissions:
+      contents: read
+      id-token: write
+
+    uses: ./.github/workflows/infrastructure.yml
+    with:
+      deploy: true
+    secrets: inherit
+
+  application:
+    name: Application
+    needs:
+      - changes
+      - infrastructure
+
+    if: |
+      always() &&
+      needs.changes.outputs.application == 'true' &&
+      (
+        needs.changes.outputs.infrastructure != 'true' ||
+        needs.infrastructure.result == 'success'
+      )
+
+    permissions:
+      contents: read
+      id-token: write
+
+    uses: ./.github/workflows/application.yml
+    with:
+      deploy: true
+    secrets: inherit

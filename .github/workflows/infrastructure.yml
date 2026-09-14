@@ -1,22 +1,12 @@
 name: Infra
 
 on:
-  push:
-    branches: [main]
-    paths:
-      - "infra/**"
-      - ".nvmrc"
-      - ".github/workflows/infrastructure.yml"
-  pull_request:
-    branches: [main]
-    paths:
-      - "infra/**"
-      - ".nvmrc"
-      - ".github/workflows/infrastructure.yml"
-
-concurrency:
-  group: shipyard-infrastructure-${{ github.ref }}
-  cancel-in-progress: false
+  workflow_call:
+    inputs:
+      deploy:
+        description: Deploy infrastructure after validation
+        required: true
+        type: boolean
 
 permissions:
   contents: read
@@ -59,11 +49,11 @@ jobs:
   deploy-infra:
     name: Deploy Infrastructure
     needs: check
-    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+    if: inputs.deploy
     runs-on: ubuntu-latest
 
     env:
-      ALLOWED_HTTP_CIDR: ${{ secrets. ALLOWED_HTTP_CIDR }}
+      ALLOWED_HTTP_CIDR: ${{ secrets.ALLOWED_HTTP_CIDR }}
 
     permissions:
       contents: read

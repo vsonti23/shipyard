@@ -70,6 +70,7 @@ export class InfraStack extends cdk.Stack {
         protocol: elbv2.ApplicationProtocol.HTTP,
         port: 3000,
         targetType: elbv2.TargetType.INSTANCE,
+        deregistrationDelay: cdk.Duration.seconds(30),
         healthCheck: {
           path: "/health",
           protocol: elbv2.Protocol.HTTP,

@@ -74,7 +74,7 @@ export class InfraStack extends cdk.Stack {
 
     const ecsInstance = new ec2.Instance(this, "ShipyardEcsInstance", {
       vpc,
-      vpcSubnets: { subnetType: ec2.SubnetType.PUBLIC },
+      vpcSubnets: { subnets: [vpc.publicSubnets[0]] },
       instanceType: new ec2.InstanceType("t4g.micro"),
       machineImage: ecs.EcsOptimizedImage.amazonLinux2023(
         ecs.AmiHardwareType.ARM,
@@ -181,7 +181,7 @@ export class InfraStack extends cdk.Stack {
       {
         vpc,
         vpcSubnets: {
-          subnetType: ec2.SubnetType.PUBLIC,
+          subnets: [vpc.publicSubnets[1]],
         },
         instanceType: new ec2.InstanceType("t4g.micro"),
         machineImage: ecs.EcsOptimizedImage.amazonLinux2023(

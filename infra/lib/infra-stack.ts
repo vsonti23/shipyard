@@ -3,6 +3,7 @@ import * as ec2 from "aws-cdk-lib/aws-ec2"
 import * as iam from "aws-cdk-lib/aws-iam"
 import * as ecr from "aws-cdk-lib/aws-ecr"
 import * as ecs from "aws-cdk-lib/aws-ecs"
+import * as autoscaling from "aws-cdk-lib/aws-autoscaling"
 import { Construct } from "constructs"
 
 interface ShipyardStackProps extends cdk.StackProps {
@@ -214,6 +215,45 @@ export class InfraStack extends cdk.Stack {
 
     new cdk.CfnOutput(this, "SecondEcsInstancePublicIp", {
       value: secondEcsInstance.instancePublicIp,
+    })
+
+    const ecsAutoScalingGroup = new autoscaling.AutoScalingGroup(
+      this,
+      "ShipyardEcsAutoScalingGroup",
+      {
+        vpc,
+        vpcSubnets: {
+          subnetType: ec2.SubnetType.PUBLIC,
+        },
+        instanceType: new ec2.InstanceType("t4g.micro"),
+        machineImage: ecs.EcsOptimizedImage.amazonLinux2023(
+          ecs.AmiHardwareType.ARM,
+        ),
+        securityGroup,
+        role: ecsInstanceRole,
+        userData: ecsUserData,
+        associatePublicIpAddress: true,
+        requireImdsv2: true,
+        minCapacity: 2,
+        desiredCapacity: 2,
+        maxCapacity: 2,
+        blockDevices: [
+          {
+            deviceName: "/dev/xvda",
+            volume: autoscaling.BlockDeviceVolume.ebs(30, {
+              volumeType: autoscaling.EbsDeviceVolumeType.GP3,
+              encrypted: true,
+              deleteOnTermination: true,
+            }),
+          },
+        ],
+      },
+    )
+
+    cdk.Tags.of(ecsAutoScalingGroup).add("Project", "ShipyardEcs")
+
+    new cdk.CfnOutput(this, "EcsAutoScalingGroupName", {
+      value: ecsAutoScalingGroup.autoScalingGroupName,
     })
   }
 }

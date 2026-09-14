@@ -21,7 +21,7 @@ test("GET /health returns a healthy response", async () => {
     expect(response.headers.get("content-type")).toBe("application/json")
     expect(await response.json()).toEqual({
       status: "ok",
-      service: "shipyardd",
+      service: "shipyard",
     })
   } finally {
     await new Promise<void>((resolve, reject) => {

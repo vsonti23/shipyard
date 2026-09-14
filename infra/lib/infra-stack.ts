@@ -151,7 +151,7 @@ export class InfraStack extends cdk.Stack {
       placementStrategies: [
         {
           type: "spread",
-          field: "attributes:ecs.availability-zone",
+          field: "attribute:ecs.availability-zone",
         },
         {
           type: "spread",

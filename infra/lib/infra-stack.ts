@@ -102,10 +102,22 @@ export class InfraStack extends cdk.Stack {
       "Allow HTTP traffic",
     )
 
+    securityGroup.addIngressRule(
+      loadBalancerSecurityGroup,
+      ec2.Port.tcpRange(32768, 65535),
+      "Allow ECS task traffic from the load balancer",
+    )
+
     securityGroup.addEgressRule(
       ec2.Peer.anyIpv4(),
       ec2.Port.tcp(443),
       "Allow HTTPS traffic",
+    )
+
+    loadBalancerSecurityGroup.addEgressRule(
+      securityGroup,
+      ec2.Port.tcpRange(32678, 65535),
+      "Allow traffic to ECS tasks",
     )
 
     const ecsInstanceRole = new iam.Role(this, "ShipyardEcsInstanceRole", {

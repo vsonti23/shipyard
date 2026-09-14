@@ -146,7 +146,7 @@ export class InfraStack extends cdk.Stack {
       cluster,
       taskDefinition,
       serviceName: "shipyard",
-      desiredCount: 1,
+      desiredCount: 2,
       launchType: "EC2",
       deploymentConfiguration: {
         minimumHealthyPercent: 0,

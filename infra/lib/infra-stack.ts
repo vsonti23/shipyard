@@ -103,6 +103,12 @@ export class InfraStack extends cdk.Stack {
       "Allow ECS task traffic from the load balancer",
     )
 
+    securityGroup.addEgressRule(
+      ec2.Peer.anyIpv4(),
+      ec2.Port.tcp(443),
+      "Allow ECS, SSM, and ECR HTTPS traffic",
+    )
+
     loadBalancerSecurityGroup.addEgressRule(
       securityGroup,
       ec2.Port.tcpRange(32678, 65535),

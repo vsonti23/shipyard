@@ -229,7 +229,7 @@ export class InfraStack extends cdk.Stack {
       cluster,
       taskDefinition,
       serviceName: "shipyard",
-      desiredCount: 4,
+      desiredCount: 7,
       placementStrategies: [
         {
           type: "spread",

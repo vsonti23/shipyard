@@ -177,41 +177,6 @@ export class InfraStack extends cdk.Stack {
       protocol: ecs.Protocol.TCP,
     })
 
-    const ecsService = new ecs.CfnService(this, "ShipyardEcsService", {
-      cluster,
-      taskDefinition,
-      serviceName: "shipyard",
-      desiredCount: 4,
-      launchType: "EC2",
-      placementStrategies: [
-        {
-          type: "spread",
-          field: "attribute:ecs.availability-zone",
-        },
-        {
-          type: "spread",
-          field: "instanceId",
-        },
-      ],
-      deploymentConfiguration: {
-        minimumHealthyPercent: 0,
-        maximumPercent: 200,
-        deploymentCircuitBreaker: {
-          enable: true,
-          rollback: true,
-        },
-      },
-      loadBalancers: [
-        {
-          containerName: "shipyard",
-          containerPort: 3000,
-          targetGroupArn: targetGroup.targetGroupArn,
-        },
-      ],
-    })
-
-    ecsService.node.addDependency(listener)
-
     const ecsAutoScalingGroup = new autoscaling.AutoScalingGroup(
       this,
       "ShipyardEcsAutoScalingGroup",
@@ -230,8 +195,7 @@ export class InfraStack extends cdk.Stack {
         associatePublicIpAddress: true,
         requireImdsv2: true,
         minCapacity: 2,
-        desiredCapacity: 2,
-        maxCapacity: 2,
+        maxCapacity: 4,
         blockDevices: [
           {
             deviceName: "/dev/xvda",
@@ -244,6 +208,64 @@ export class InfraStack extends cdk.Stack {
         ],
       },
     )
+
+    const capacityProvider = new ecs.AsgCapacityProvider(
+      this,
+      "ShipyardCapacityProvider",
+      {
+        autoScalingGroup: ecsAutoScalingGroup,
+        enableManagedScaling: true,
+        enableManagedDraining: true,
+        enableManagedTerminationProtection: false,
+        minimumScalingStepSize: 1,
+        maximumScalingStepSize: 1,
+        targetCapacityPercent: 100,
+      },
+    )
+
+    cluster.addAsgCapacityProvider(capacityProvider)
+
+    const ecsService = new ecs.CfnService(this, "ShipyardEcsService", {
+      cluster,
+      taskDefinition,
+      serviceName: "shipyard",
+      desiredCount: 4,
+      placementStrategies: [
+        {
+          type: "spread",
+          field: "attribute:ecs.availability-zone",
+        },
+        {
+          type: "spread",
+          field: "instanceId",
+        },
+      ],
+      deploymentConfiguration: {
+        minimumHealthyPercent: 0,
+        maximumPercent: 200,
+        deploymentCircuitBreaker: {
+          enable: true,
+          rollback: true,
+        },
+      },
+      capacityProviderStrategy: [
+        {
+          capacityProvider: capacityProvider.capacityProviderName,
+          weight: 1,
+          base: 0,
+        },
+      ],
+      loadBalancers: [
+        {
+          containerName: "shipyard",
+          containerPort: 3000,
+          targetGroupArn: targetGroup.targetGroupArn,
+        },
+      ],
+    })
+
+    ecsService.node.addDependency(capacityProvider)
+    ecsService.node.addDependency(listener)
 
     cdk.Tags.of(ecsAutoScalingGroup).add("Project", "ShipyardEcs")
 

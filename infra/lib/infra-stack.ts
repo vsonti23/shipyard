@@ -98,21 +98,9 @@ export class InfraStack extends cdk.Stack {
     })
 
     securityGroup.addIngressRule(
-      ec2.Peer.ipv4(props.allowedHttpCidr),
-      ec2.Port.tcpRange(32768, 65535),
-      "Allow HTTP traffic",
-    )
-
-    securityGroup.addIngressRule(
       loadBalancerSecurityGroup,
       ec2.Port.tcpRange(32768, 65535),
       "Allow ECS task traffic from the load balancer",
-    )
-
-    securityGroup.addEgressRule(
-      ec2.Peer.anyIpv4(),
-      ec2.Port.tcp(443),
-      "Allow HTTPS traffic",
     )
 
     loadBalancerSecurityGroup.addEgressRule(

@@ -1,10 +1,11 @@
 import { createServer } from "node:http"
+import { hostname } from "node:os"
 
 export function createApp() {
   return createServer((req, res) => {
     if (req.method === "GET" && req.url === "/health") {
       res.writeHead(200, { "Content-Type": "application/json" })
-      res.end(JSON.stringify({ status: "ok", service: "shipyard" }))
+      res.end(JSON.stringify({ status: "ok", handledBy: hostname() }))
       return
     }
 

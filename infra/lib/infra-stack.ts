@@ -236,8 +236,8 @@ export class InfraStack extends cdk.Stack {
           field: "attribute:ecs.availability-zone",
         },
         {
-          type: "spread",
-          field: "instanceId",
+          type: "binpack",
+          field: "memory",
         },
       ],
       deploymentConfiguration: {

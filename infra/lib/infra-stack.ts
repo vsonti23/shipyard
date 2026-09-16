@@ -93,6 +93,11 @@ export class InfraStack extends cdk.Stack {
       },
     )
 
+    new wafv2.CfnWebACLAssociation(this, "ShipyardWebAclAssociation", {
+      resourceArn: loadBalancer.loadBalancerArn,
+      webAclArn: webAcl.attrArn,
+    })
+
     new cdk.CfnOutput(this, "LoadBalancerUrl", {
       value: `http://${loadBalancer.loadBalancerDnsName}`,
       description: "Public URL for the Shipyard load balancer",

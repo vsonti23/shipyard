@@ -120,13 +120,6 @@ export class InfraStack extends cdk.Stack {
       },
     )
 
-    const listener = loadBalancer.addListener("ShipyardHttpListener", {
-      port: 80,
-      protocol: elbv2.ApplicationProtocol.HTTP,
-      open: false,
-      defaultAction: elbv2.ListenerAction.forward([targetGroup]),
-    })
-
     const cluster = new ecs.Cluster(this, "ShipyardCluster", {
       vpc,
       clusterName: "shipyard",
@@ -309,6 +302,13 @@ export class InfraStack extends cdk.Stack {
     )
 
     fargateService.attachToApplicationTargetGroup(fargateTargetGroup)
+
+    const listener = loadBalancer.addListener("ShipyardHttpListener", {
+      port: 80,
+      protocol: elbv2.ApplicationProtocol.HTTP,
+      open: false,
+      defaultAction: elbv2.ListenerAction.forward([fargateTargetGroup]),
+    })
 
     const ecsAutoScalingGroup = new autoscaling.AutoScalingGroup(
       this,

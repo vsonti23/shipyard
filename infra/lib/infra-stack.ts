@@ -3,6 +3,7 @@ import * as ec2 from "aws-cdk-lib/aws-ec2"
 import * as iam from "aws-cdk-lib/aws-iam"
 import * as ecr from "aws-cdk-lib/aws-ecr"
 import * as ecs from "aws-cdk-lib/aws-ecs"
+import * as appscaling from "aws-cdk-lib/aws-applicationautoscaling"
 import * as autoscaling from "aws-cdk-lib/aws-autoscaling"
 import * as elbv2 from "aws-cdk-lib/aws-elasticloadbalancingv2"
 import { Construct } from "constructs"
@@ -268,6 +269,28 @@ export class InfraStack extends cdk.Stack {
     ecsService.node.addDependency(listener)
 
     cdk.Tags.of(ecsAutoScalingGroup).add("Project", "ShipyardEcs")
+
+    const taskScalingTarget = new appscaling.ScalableTarget(
+      this,
+      "ShipyardTaskScalingTarget",
+      {
+        serviceNamespace: appscaling.ServiceNamespace.ECS,
+        scalableDimension: "ecs:service:DesiredCount",
+        resourceId: `service/${cluster.clusterName}/shipyard`,
+        minCapacity: 4,
+        maxCapacity: 8,
+      },
+    )
+
+    taskScalingTarget.node.addDependency(ecsService)
+
+    taskScalingTarget.scaleToTrackMetric("ShipyardCpuScaling", {
+      predefinedMetric:
+        appscaling.PredefinedMetric.ECS_SERVICE_AVERAGE_CPU_UTILIZATION,
+      targetValue: 50,
+      scaleOutCooldown: cdk.Duration.seconds(60),
+      scaleInCooldown: cdk.Duration.minutes(5),
+    })
 
     new cdk.CfnOutput(this, "EcsAutoScalingGroupName", {
       value: ecsAutoScalingGroup.autoScalingGroupName,

@@ -1,12 +1,10 @@
 import * as cdk from "aws-cdk-lib/core"
 import * as ec2 from "aws-cdk-lib/aws-ec2"
-import * as iam from "aws-cdk-lib/aws-iam"
 import * as ecr from "aws-cdk-lib/aws-ecr"
 import * as ecs from "aws-cdk-lib/aws-ecs"
-import * as autoscaling from "aws-cdk-lib/aws-autoscaling"
 import * as elbv2 from "aws-cdk-lib/aws-elasticloadbalancingv2"
 import * as wafv2 from "aws-cdk-lib/aws-wafv2"
-import { Construct } from "constructs"
+import type { Construct } from "constructs"
 
 interface ShipyardStackProps extends cdk.StackProps {
   allowedHttpCidr: string
@@ -233,7 +231,7 @@ export class InfraStack extends cdk.Stack {
       scaleInCooldown: cdk.Duration.minutes(5),
     })
 
-    const listener = loadBalancer.addListener("ShipyardHttpListener", {
+    loadBalancer.addListener("ShipyardHttpListener", {
       port: 80,
       protocol: elbv2.ApplicationProtocol.HTTP,
       open: false,

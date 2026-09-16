@@ -11,7 +11,9 @@
     "start": "node build/server.js",
     "dev": "tsx watch src/server.ts",
     "test": "vitest run src",
-    "test:watch": "vitest watch src"
+    "test:watch": "vitest watch src",
+    "lint": "biome lint src infra/bin infra/lib infra/test",
+    "lint:fix": "biome lint --write --unsafe src infra/bin infra/lib infra/test"
   },
   "repository": {
     "type": "git",
@@ -26,6 +28,7 @@
   },
   "homepage": "https://github.com/vsonti23/shipyard#readme",
   "devDependencies": {
+    "@biomejs/biome": "2.5.13",
     "@types/node": "^24.13.3",
     "prettier": "^3.9.6",
     "tsx": "^4.23.13",

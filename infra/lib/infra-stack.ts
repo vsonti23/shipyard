@@ -6,6 +6,7 @@ import * as ecs from "aws-cdk-lib/aws-ecs"
 import * as appscaling from "aws-cdk-lib/aws-applicationautoscaling"
 import * as autoscaling from "aws-cdk-lib/aws-autoscaling"
 import * as elbv2 from "aws-cdk-lib/aws-elasticloadbalancingv2"
+import * as wafv2 from "aws-cdk-lib/aws-wafv2"
 import { Construct } from "constructs"
 
 interface ShipyardStackProps extends cdk.StackProps {
@@ -27,6 +28,19 @@ export class InfraStack extends cdk.Stack {
           cidrMask: 24,
         },
       ],
+    })
+
+    const webAcl = new wafv2.CfnWebACL(this, "ShipyardWebAcl", {
+      name: "shipyard-web-acl",
+      scope: "REGIONAL",
+      defaultAction: {
+        allow: {},
+      },
+      visibilityConfig: {
+        cloudWatchMetricsEnabled: true,
+        metricName: "ShipyardWebAcl",
+        sampledRequestsEnabled: true,
+      },
     })
 
     const loadBalancerSecurityGroup = new ec2.SecurityGroup(

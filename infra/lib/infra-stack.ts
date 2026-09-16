@@ -218,6 +218,36 @@ export class InfraStack extends cdk.Stack {
       protocol: ecs.Protocol.TCP,
     })
 
+    const fargateTaskDefinition = new ecs.FargateTaskDefinition(
+      this,
+      "ShipyardFargateTaskDefinition",
+      {
+        family: "shipyard-fargate",
+        cpu: 256,
+        memoryLimitMiB: 512,
+        runtimePlatform: {
+          cpuArchitecture: ecs.CpuArchitecture.ARM64,
+          operatingSystemFamily: ecs.OperatingSystemFamily.LINUX,
+        },
+      },
+    )
+
+    const fargateContainer = fargateTaskDefinition.addContainer(
+      "ShipyardFargateContainer",
+      {
+        containerName: "shipyard",
+        image: ecs.ContainerImage.fromEcrRepository(repository, "latest"),
+        logging: ecs.LogDrivers.awsLogs({
+          streamPrefix: "shipyard",
+        }),
+      },
+    )
+
+    fargateContainer.addPortMappings({
+      containerPort: 3000,
+      protocol: ecs.Protocol.TCP,
+    })
+
     const ecsAutoScalingGroup = new autoscaling.AutoScalingGroup(
       this,
       "ShipyardEcsAutoScalingGroup",

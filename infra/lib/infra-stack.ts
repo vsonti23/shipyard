@@ -287,6 +287,29 @@ export class InfraStack extends cdk.Stack {
       },
     )
 
+    const fargateService = new ecs.FargateService(
+      this,
+      "ShipyardFargateService",
+      {
+        cluster,
+        serviceName: "shipyard-fargate",
+        taskDefinition: fargateTaskDefinition,
+        desiredCount: 1,
+        assignPublicIp: true,
+        vpcSubnets: {
+          subnetType: ec2.SubnetType.PUBLIC,
+        },
+        securityGroups: [fargateSecurityGroup],
+        circuitBreaker: {
+          rollback: true,
+        },
+        minHealthyPercent: 100,
+        maxHealthyPercent: 200,
+      },
+    )
+
+    fargateService.attachToApplicationTargetGroup(fargateTargetGroup)
+
     const ecsAutoScalingGroup = new autoscaling.AutoScalingGroup(
       this,
       "ShipyardEcsAutoScalingGroup",

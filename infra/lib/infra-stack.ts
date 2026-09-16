@@ -41,6 +41,27 @@ export class InfraStack extends cdk.Stack {
         metricName: "ShipyardWebAcl",
         sampledRequestsEnabled: true,
       },
+      rules: [
+        {
+          name: "RateLimitByIp",
+          priority: 0,
+          action: {
+            block: {},
+          },
+          statement: {
+            rateBasedStatement: {
+              aggregateKeyType: "IP",
+              limit: 100,
+              evaluationWindowSec: 60,
+            },
+          },
+          visibilityConfig: {
+            cloudWatchMetricsEnabled: true,
+            metricName: "ShipyardRateLimitByIp",
+            sampledRequestsEnabled: true,
+          },
+        },
+      ],
     })
 
     const loadBalancerSecurityGroup = new ec2.SecurityGroup(

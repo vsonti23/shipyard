@@ -270,6 +270,23 @@ export class InfraStack extends cdk.Stack {
       "Allow traffic to Shipyard Fargate tasks",
     )
 
+    const fargateTargetGroup = new elbv2.ApplicationTargetGroup(
+      this,
+      "ShipyardFargateTargetGroup",
+      {
+        vpc,
+        protocol: elbv2.ApplicationProtocol.HTTP,
+        port: 3000,
+        targetType: elbv2.TargetType.IP,
+        deregistrationDelay: cdk.Duration.seconds(30),
+        healthCheck: {
+          path: "/health",
+          protocol: elbv2.Protocol.HTTP,
+          healthyHttpCodes: "200",
+        },
+      },
+    )
+
     const ecsAutoScalingGroup = new autoscaling.AutoScalingGroup(
       this,
       "ShipyardEcsAutoScalingGroup",

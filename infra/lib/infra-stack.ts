@@ -248,6 +248,28 @@ export class InfraStack extends cdk.Stack {
       protocol: ecs.Protocol.TCP,
     })
 
+    const fargateSecurityGroup = new ec2.SecurityGroup(
+      this,
+      "ShipyardFargateSecurityGroup",
+      {
+        vpc,
+        description: "Network rules for Shipyard Fargate tasks",
+        allowAllOutbound: false,
+      },
+    )
+
+    fargateSecurityGroup.addIngressRule(
+      loadBalancerSecurityGroup,
+      ec2.Port.tcp(3000),
+      "Allow Application traffic from load balancer",
+    )
+
+    fargateSecurityGroup.addEgressRule(
+      ec2.Peer.anyIpv4(),
+      ec2.Port.tcp(443),
+      "Allow traffic to Shipyard Fargate tasks",
+    )
+
     const ecsAutoScalingGroup = new autoscaling.AutoScalingGroup(
       this,
       "ShipyardEcsAutoScalingGroup",

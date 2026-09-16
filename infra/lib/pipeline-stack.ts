@@ -52,6 +52,7 @@ export class PipelineStack extends cdk.Stack {
         actions: ["ecs:DescribeServices", "ecs:UpdateService"],
         resources: [
           `arn:${cdk.Aws.PARTITION}:ecs:${cdk.Aws.REGION}:${cdk.Aws.ACCOUNT_ID}:service/shipyard/shipyard`,
+          `arn:${cdk.Aws.PARTITION}:ecs:${cdk.Aws.REGION}:${cdk.Aws.ACCOUNT_ID}:service/shipyard/shipyard-fargate`,
         ],
       }),
     )
@@ -61,6 +62,7 @@ export class PipelineStack extends cdk.Stack {
         actions: ["iam:PassRole"],
         resources: [
           `arn:${cdk.Aws.PARTITION}:iam::${cdk.Aws.ACCOUNT_ID}:role/ShipyardStack-ShipyardTaskDefinition*`,
+          `arn:${cdk.Aws.PARTITION}:iam::${cdk.Aws.ACCOUNT_ID}:role/ShipyardStack-ShipyardFargateTaskDefinition*`,
         ],
         conditions: {
           StringEquals: {

@@ -126,7 +126,7 @@ jobs:
       - name: Download current task definition
         run: |
           aws ecs describe-task-definition \
-            --task-definition shipyard \
+            --task-definition shipyard-fargate \
             --query taskDefinition \
             > task-definition.json
 
@@ -143,5 +143,5 @@ jobs:
         with:
           task-definition: ${{ steps.task-definition.outputs.task-definition }}
           cluster: shipyard
-          service: shipyard
+          service: shipyard-fargate
           wait-for-service-stability: true

@@ -85,6 +85,12 @@ export class InfraStack extends cdk.Stack {
       "Allow HTTP traffic from the configured network",
     )
 
+    loadBalancerSecurityGroup.addIngressRule(
+      ec2.Peer.ipv4(props.allowedHttpCidr),
+      ec2.Port.tcp(443),
+      "Allow HTTPS traffic from the configured network",
+    )
+
     const loadBalancer = new elbv2.ApplicationLoadBalancer(
       this,
       "ShipyardLoadBalancer",
@@ -242,6 +248,15 @@ export class InfraStack extends cdk.Stack {
     loadBalancer.addListener("ShipyardHttpListener", {
       port: 80,
       protocol: elbv2.ApplicationProtocol.HTTP,
+      open: false,
+      defaultAction: elbv2.ListenerAction.forward([fargateTargetGroup]),
+    })
+
+    loadBalancer.addListener("ShipyardHttpsListener", {
+      port: 443,
+      protocol: elbv2.ApplicationProtocol.HTTPS,
+      certificates: [certificate],
+      sslPolicy: elbv2.SslPolicy.RECOMMENDED_TLS,
       open: false,
       defaultAction: elbv2.ListenerAction.forward([fargateTargetGroup]),
     })

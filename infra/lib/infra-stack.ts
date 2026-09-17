@@ -249,7 +249,11 @@ export class InfraStack extends cdk.Stack {
       port: 80,
       protocol: elbv2.ApplicationProtocol.HTTP,
       open: false,
-      defaultAction: elbv2.ListenerAction.forward([fargateTargetGroup]),
+      defaultAction: elbv2.ListenerAction.redirect({
+        protocol: "HTTPS",
+        port: "443",
+        permanent: true,
+      }),
     })
 
     loadBalancer.addListener("ShipyardHttpsListener", {

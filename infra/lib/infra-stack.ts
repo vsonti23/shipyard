@@ -1,3 +1,4 @@
+import * as acm from "aws-cdk-lib/aws-certificatemanager"
 import * as cdk from "aws-cdk-lib/core"
 import * as ec2 from "aws-cdk-lib/aws-ec2"
 import * as ecr from "aws-cdk-lib/aws-ecr"
@@ -13,6 +14,13 @@ interface ShipyardStackProps extends cdk.StackProps {
 export class InfraStack extends cdk.Stack {
   constructor(scope: Construct, id: string, props: ShipyardStackProps) {
     super(scope, id, props)
+
+    const shipyardDomainName = "shipyard.varshiksonti.dev"
+
+    const certificate = new acm.Certificate(this, "ShipyardCertificate", {
+      domainName: shipyardDomainName,
+      validation: acm.CertificateValidation.fromDns(),
+    })
 
     const vpc = new ec2.Vpc(this, "ShipyardVpc", {
       ipAddresses: ec2.IpAddresses.cidr("10.0.0.0/16"),
